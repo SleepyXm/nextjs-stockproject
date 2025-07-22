@@ -14,7 +14,7 @@ class TradeAction(BaseModel):
 async def get_stock_data(
     ticker_symbol: str,
     interval: str = Query("5m"),
-    period: str = Query("5d")
+    period: str = Query("1mo")
 ):
     if interval not in INTERVALS or period not in PERIODS:
         raise HTTPException(status_code=400, detail="Invalid interval or period")
