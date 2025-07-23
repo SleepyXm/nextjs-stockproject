@@ -2,10 +2,9 @@
 
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { Data } from "./components/Bullshit";
+import AssetSearchComponent from "./components/AssetSearch";
 
 export default function Home() {
-  const Chart = dynamic(() => import('./components/Charts'), {ssr: false});
 
   return (
     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
@@ -31,7 +30,9 @@ export default function Home() {
           </li>
         </ol>
 
-        <Chart />
+        <AssetSearchComponent />
+
+
 
         <div className="flex gap-4 items-center flex-col sm:flex-row">
           <a
