@@ -153,3 +153,74 @@ export const Linechart: React.FC<{
 
   return <div ref={chartContainerRef} style={{ width: 1500, height: 900 }} />;
 };
+
+
+
+export const LinechartIntraday: React.FC<{
+  data: LineChart[];
+  colors?: LineChartColors;
+}> = ({ data, colors = {} }) => {
+  const {
+    backgroundColor = 'transparent',
+    textColor = 'black',
+    lineColor = '#4deb82ff',
+    areaTopColor = '#29ff70ff',
+    areaBottomColor = 'rgba(15, 92, 49, 0.28)',
+  } = colors;
+
+  const chartContainerRef = useRef<HTMLDivElement | null>(null);
+  const chartRef = useRef<any>(null);
+  const seriesRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+
+    const chart = createChart(chartContainerRef.current, {
+      layout: {
+        background: { type: ColorType.Solid, color: backgroundColor },
+        textColor,
+      },
+      width: chartContainerRef.current.clientWidth,
+      height: chartContainerRef.current.clientHeight,
+      timeScale: {
+        rightOffset: 30,
+      },
+    });
+
+    const series = chart.addSeries(AreaSeries, {
+      lineColor,
+      topColor: areaTopColor,
+      bottomColor: areaBottomColor,
+    });
+
+    series.setData(data);
+
+    chartRef.current = chart;
+    seriesRef.current = series;
+
+    const handleResize = () => {
+      if (chartRef.current && chartContainerRef.current) {
+        chartRef.current.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+        });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chart.remove();
+      chartRef.current = null;
+      seriesRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (seriesRef.current) {
+      seriesRef.current.setData(data);
+    }
+  }, [data]);
+
+  return <div ref={chartContainerRef} style={{ width: 600, height: 200 }} />;
+};

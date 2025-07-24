@@ -10,6 +10,11 @@ class TradeAction(BaseModel):
     price: float
     time: str
 
+
+INTERVALS = {"1m", "5m", "15m", "30m", "1h", "1d"}
+PERIODS = {"1d", "5d", "1mo", "3mo"}
+
+
 @stock_router.get("/stockdata")
 async def get_stock_data(
     ticker_symbol: str,
@@ -87,6 +92,43 @@ async def get_latest_candle(
     }
 
     return latest_candle
+
+
+@stock_router.get("/stockdata/intraday")
+async def get_intraday_data(
+    ticker_symbol: str,
+    interval: str = Query("15m"),
+    period: str = Query("1d")
+):
+    if interval not in INTERVALS:
+        raise HTTPException(status_code=400, detail="Invalid interval")
+    if period not in PERIODS:
+        raise HTTPException(status_code=400, detail="Invalid period")
+    
+    try:
+        data, column_mapping = load_stock_data(ticker_symbol, interval, period)
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+    
+    open_col = column_mapping["open_col"]
+    high_col = column_mapping["high_col"]
+    low_col = column_mapping["low_col"]
+    close_col = column_mapping["close_col"]
+    
+    chart_data = [
+        {
+            "time": int(idx.timestamp()),
+            "open": row[open_col],
+            "high": row[high_col],
+            "low": row[low_col],
+            "close": row[close_col],
+        }
+        for idx, row in data.iterrows()
+    ]
+    
+    return chart_data
 
 @stock_router.post("/trade")
 async def place_trade(trade: TradeAction):
