@@ -9,7 +9,7 @@ export const CandleStickChart: React.FC<{
 }> = ({ data, colors = {} }) => {
   const {
     backgroundColor = 'transparent',
-    textColor = 'black',
+    textColor = 'white',
     upColor = '#1fb369ff',
     downColor = '#ad4b44ff',
     borderUpColor = '#1fb369ff',
@@ -75,12 +75,8 @@ export const CandleStickChart: React.FC<{
     }
   }, [data]);
 
-  return <div ref={chartContainerRef2} style={{ width: 1500, height: 900 }} />;
+  return <div ref={chartContainerRef2} style={{ width: "90vw", height: "70vh"  }} />;
 };
-
-
-
-
 
 
 
@@ -151,7 +147,7 @@ export const Linechart: React.FC<{
     }
   }, [data]);
 
-  return <div ref={chartContainerRef} style={{ width: 1500, height: 900 }} />;
+  return <div ref={chartContainerRef} style={{ width: "90vw", height: "70vh" }} />;
 };
 
 
@@ -183,7 +179,7 @@ export const LinechartIntraday: React.FC<{
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
       timeScale: {
-        rightOffset: 30,
+        fixLeftEdge: true,
       },
     });
 

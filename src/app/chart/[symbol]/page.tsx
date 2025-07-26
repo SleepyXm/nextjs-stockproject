@@ -1,15 +1,14 @@
 "use client";
 
-import { CandlestickChart, Interval } from '../../types/charts';
-import { CandleStickChart, Linechart } from '../ChartRender';
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import axios from 'axios';
-import { data } from 'framer-motion/client';
-import { useChartData } from '../ChartData';
+import { CandlestickChart, Interval } from "../../types/charts";
+import { CandleStickChart, Linechart } from "../ChartRender";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import axios from "axios";
+import { data } from "framer-motion/client";
+import { useChartData } from "../ChartData";
 
-const API_BASE = "http://localhost:8000/api"
-
+const API_BASE = "http://localhost:8000/api";
 
 function useCandlestickChartData(ticker: string, interval: string) {
   return useChartData<CandlestickChart>(ticker, interval);
@@ -17,7 +16,7 @@ function useCandlestickChartData(ticker: string, interval: string) {
 
 function useLineChartData(ticker: string, interval: string) {
   const raw = useChartData(ticker, interval);
-  return raw?.map(item => ({
+  return raw?.map((item) => ({
     time: item.time,
     value: item.close,
   }));
@@ -26,36 +25,47 @@ function useLineChartData(ticker: string, interval: string) {
 function TradeButtonRow({ data, ticker }: { data: any; ticker: string }) {
   const handleTrade = async (action: "buy" | "sell") => {
     try {
-      const priceToSend = action === "buy" ? data.buy_price : data.close;
-      await axios.post("http://localhost:8000/trade", {
+      const tradePayload = {
         ticker,
         action,
-        price: priceToSend,
+        price: action === "buy" ? data.buy_price : data.close,
+        buy_price: data.buy_price,
+        sell_price: data.close,
         time: data.time,
-      });
-      alert(`${action.toUpperCase()} order placed!`);
+      };
+
+      const res = await axios.post(
+        "http://localhost:8000/api/trade",
+        tradePayload
+      );
+      const { pnl, spread } = res.data.data;
+
+      alert(
+        `${action.toUpperCase()} order placed!\nPnL: $${pnl} | Spread: $${spread}`
+      );
     } catch (err) {
-      console.error("Nothing to see here lololol (trade btw):", err);
+      console.error("Trade error:", err);
     }
   };
-  return (
-  <div className="flex gap-4 mb-2 items-center">
-    <button
-      onClick={() => handleTrade("sell")}
-      className="bg-red-400 text-white px-4 py-2 rounded flex flex-col items-center hover:bg-red-500 transition"
-    >
-      Sell
-      <small>${data.close}</small>
-    </button>
 
-    <button
-      onClick={() => handleTrade("buy")}
-      className="bg-blue-400 text-white px-4 py-2 rounded flex flex-col items-center hover:bg-blue-500 transition"
-    >
-      Buy
-      <small>${data.buy_price}</small>
-    </button>
-  </div>
+  return (
+    <div className="flex gap-4 mb-2 items-center">
+      <button
+        onClick={() => handleTrade("sell")}
+        className="bg-red-400 text-white px-4 py-2 rounded flex flex-col items-center hover:bg-red-500 transition"
+      >
+        Sell
+        <small>${data.close}</small>
+      </button>
+
+      <button
+        onClick={() => handleTrade("buy")}
+        className="bg-blue-400 text-white px-4 py-2 rounded flex flex-col items-center hover:bg-blue-500 transition"
+      >
+        Buy
+        <small>${data.buy_price}</small>
+      </button>
+    </div>
   );
 }
 
@@ -68,27 +78,17 @@ function useDebounce<T>(value: T, delay: number): T {
     }, delay);
 
     return () => clearTimeout(handler);
-
   }, [value, delay]);
   return debounced;
 }
 
-const intervals: Interval[] = [
-  "1m",
-  "5m",
-  "15m",
-  "1h",
-  "4h",
-  "1d",
-  "1wk",
-  "1mo"
-]
+const intervals: Interval[] = ["1m", "5m", "15m", "1h", "1d", "1wk", "1mo"];
 
 export default function ChartPage() {
   const params = useParams();
-  const symbolParam = typeof params.symbol === 'string' ? params.symbol : '';
+  const symbolParam = typeof params.symbol === "string" ? params.symbol : "";
   const shortname = symbolParam.toUpperCase();
-  const [interval, setInterval] = useState<Interval>('5m');
+  const [interval, setInterval] = useState<Interval>("5m");
 
   const [isCandle, setIsCandle] = useState(true); // true = candlestick, false = line
 
@@ -99,45 +99,50 @@ export default function ChartPage() {
 
   return (
     <div className="p-4">
-      {/* Interval Buttons */}
-      <div className="flex gap-2 my-4">
-        {intervals.map((int) => (
+      <div className="flex justify-between items-center my-4">
+        <div className="flex gap-2">
+          {intervals.map((int) => (
+            <button
+              key={int}
+              onClick={() => setInterval(int)}
+              className={`px-3 py-1 rounded ${
+                interval === int ? "bg-blue-600 text-white" : "bg-gray-600"
+              }`}
+            >
+              {int}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
           <button
-            key={int}
-            onClick={() => setInterval(int)}
-            className={`px-3 py-1 rounded ${interval === int ? 'bg-blue-600 text-white' : 'bg-gray-600'}`}
+            onClick={() => setIsCandle(true)}
+            className={`px-3 py-1 rounded ${
+              isCandle ? "bg-blue-600 text-white" : "bg-gray-600"
+            }`}
           >
-            {int}
+            Candlestick
           </button>
-        ))}
+          <button
+            onClick={() => setIsCandle(false)}
+            className={`px-3 py-1 rounded ${
+              !isCandle ? "bg-blue-600 text-white" : "bg-gray-600"
+            }`}
+          >
+            Line
+          </button>
+        </div>
       </div>
 
-      {/* Chart Type Toggle Buttons */}
-      <div className="flex gap-2 mb-4">
-        <button
-          onClick={() => setIsCandle(true)}
-          className={`px-3 py-1 rounded ${isCandle ? 'bg-blue-600 text-white' : 'bg-gray-600'}`}
-        >
-          Candlestick
-        </button>
-        <button
-          onClick={() => setIsCandle(false)}
-          className={`px-3 py-1 rounded ${!isCandle ? 'bg-blue-600 text-white' : 'bg-gray-600'}`}
-        >
-          Line
-        </button>
-      </div>
-      <>
-      {latestCandle && <TradeButtonRow data={latestCandle} ticker={debouncedTicker} />}
-      </>
+      {latestCandle && (
+        <TradeButtonRow data={latestCandle} ticker={debouncedTicker} />
+      )}
+
       <h2 className="text-xl font-bold mb-2">{shortname} Chart</h2>
 
-      {/* Render one or the other based on toggle */}
       {isCandle ? (
         dataCandlestick && dataCandlestick.length > 0 ? (
-          <>
-            <CandleStickChart data={dataCandlestick} />
-          </>
+          <CandleStickChart data={dataCandlestick} />
         ) : (
           <p>Loading candlestick chart data...</p>
         )

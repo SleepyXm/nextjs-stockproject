@@ -8,7 +8,9 @@ class TradeAction(BaseModel):
     ticker: str
     action: str
     price: float
-    time: str
+    time: int
+    buy_price: float
+    sell_price: float
 
 
 INTERVALS = {"1m", "5m", "15m", "30m", "1h", "1d"}
@@ -132,14 +134,22 @@ async def get_intraday_data(
 
 @stock_router.post("/trade")
 async def place_trade(trade: TradeAction):
-    
-    if trade.action.lower() == "buy":
-        multiplier = 1.0008 if trade.price < 10000 else 1.00008
-        buy_price = trade.price * multiplier
-        print(f"Buy price adjusted from {trade.price} to {buy_price}")
-        trade_price_to_use = buy_price
-    else:
-        trade_price_to_use = trade.price
+    direction = 1 if trade.action == "buy" else -1
 
-    print(f"Trade: {trade.action.upper()} {trade.ticker} at {trade.price} on {trade.time}")
-    return {"message": "Trade executed", "data": {**trade.dict(), "executed_price": trade_price_to_use}}
+    entry_price = trade.price
+    exit_price = trade.sell_price if trade.action == "buy" else trade.buy_price
+    spread = round(trade.sell_price - trade.buy_price, 4)
+    pnl = round((exit_price - entry_price) * direction, 4)
+
+    return {
+        "message": "Trade executed",
+        "data": {
+            "ticker": trade.ticker,
+            "action": trade.action,
+            "entry_price": entry_price,
+            "exit_price": exit_price,
+            "spread": spread,
+            "pnl": pnl,
+            "time": trade.time
+        }
+    }

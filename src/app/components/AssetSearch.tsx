@@ -1,32 +1,40 @@
-import { useState, useEffect } from 'react';
-import { Asset } from '../types/Assets';
-import { LineChart } from '../types/charts';
-import { LinechartIntraday } from '../chart/ChartRender';
-import Link from 'next/link';
+import { useState, useEffect } from "react";
+import { Asset } from "../types/Assets";
+import { LineChart } from "../types/charts";
+import { LinechartIntraday } from "../chart/ChartRender";
+import Link from "next/link";
 
-const BACKEND_URL = 'http://localhost:8000/api/search';
+const BACKEND_URL = "http://localhost:8000/api/search";
 
 function fetchAssets(query: string): Promise<Asset[]> {
   return fetch(`${BACKEND_URL}?q=${encodeURIComponent(query)}`)
-    .then(res => {
-      if (!res.ok) throw new Error('Fetch failed');
+    .then((res) => {
+      if (!res.ok) throw new Error("Fetch failed");
       return res.json();
     })
-    .then(data => data.quotes || [])
-    .catch(err => {
-      console.error('Error fetching assets:', err);
+    .then((data) => data.quotes || [])
+    .catch((err) => {
+      console.error("Error fetching assets:", err);
       return [];
     });
 }
 
-async function fetchIntraday(symbol: string, interval = "15m", period = "1d"):  Promise<LineChart[]> {
+async function fetchIntraday(
+  symbol: string,
+  interval = "15m",
+  period = "1d"
+): Promise<LineChart[]> {
   try {
-    const res = await fetch(`http://localhost:8000/api/stockdata/intraday?ticker_symbol=${encodeURIComponent(symbol)}&interval=${interval}&period=${period}`);
-    if (!res.ok) throw new Error('Intraday fetch fucking died bro');
-    const candles = await res.json();
-    return candles.map((candle: any) => ({
-      time: candle.time,
-      value: candle.close,
+    const res = await fetch(
+      `http://localhost:8000/api/stockdata/intraday?ticker_symbol=${encodeURIComponent(
+        symbol
+      )}&interval=${interval}&period=${period}`
+    );
+    if (!res.ok) throw new Error("Intraday fetch fucking died bro");
+    const intrday = await res.json();
+    return intrday.map((intrday: any) => ({
+      time: intrday.time,
+      value: intrday.close,
     }));
   } catch (err) {
     console.error(`Im telling you intraday is an issue for ${symbol}:`, err);
@@ -34,11 +42,12 @@ async function fetchIntraday(symbol: string, interval = "15m", period = "1d"):  
   }
 }
 
-
 export default function AssetSearchComponent() {
-    const [searchInput, setSearchInput] = useState('');
+  const [searchInput, setSearchInput] = useState("");
   const [assets, setAssets] = useState<Asset[]>([]);
-  const [intradayCharts, setIntradayCharts] = useState<Record<string, LineChart[]>>({});
+  const [intradayCharts, setIntradayCharts] = useState<
+    Record<string, LineChart[]>
+  >({});
 
   const handleSearch = async () => {
     if (!searchInput.trim()) return;
@@ -62,67 +71,55 @@ export default function AssetSearchComponent() {
   };
 
   return (
-  <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
-    <h2 style={{ marginBottom: '1rem' }}>Search Assets</h2>
+    <div className="p-8 font-sans">
+      <h2 className="mb-4 text-2xl font-semibold">Search Assets</h2>
 
-    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }}>
-      <input
-        type="text"
-        value={searchInput}
-        onChange={(e) => setSearchInput(e.target.value)}
-        placeholder="Search for an asset..."
-        style={{
-          padding: '0.5rem',
-          fontSize: '1rem',
-          flex: 1,
-        }}
-      />
-      <button
-        onClick={handleSearch}
-        style={{
-          padding: '0.5rem 1rem',
-          fontSize: '1rem',
-          cursor: 'pointer',
-        }}
-      >
-        Search
-      </button>
-    </div>
-
-    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-      {assets.map((asset) => (
-        <li
-          key={asset.symbol}
-          style={{
-            marginBottom: '2rem',
-            padding: '1.5rem',
-            border: '1px solid #ddd',
-            borderRadius: '8px',
-            backgroundColor: 'rgba(0,0,0,0.00',
-            boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+      <div className="flex gap-2 mb-8">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSearch();
           }}
+          className="flex gap-2 mb-8"
         >
-          <Link href={`/chart/${asset.symbol}`}>
-            <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
-              {asset.symbol} — {asset.shortname}
-            </div>
-          </Link>
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search for an asset..."
+            className="px-4 py-3 text-base rounded-l-full border border-gray-300 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-300 bg-white text-gray-600 shadow-sm"
+            style={{ width: "450px" }}
+          />
+          <button
+            type="submit"
+            className="px-5 py-3 text-base cursor-pointer bg-[#343f52] text-white rounded-r-full"
+            style={{ width: "150px" }}
+          >
+            Search
+          </button>
+        </form>
+      </div>
 
-          {intradayCharts[asset.symbol]?.length > 0 && (
-            <div
-              style={{
-                marginTop: '1rem',
-                width: '100%',
-                maxWidth: 600,
-                height: 150,
-              }}
-            >
-              <LinechartIntraday data={intradayCharts[asset.symbol]} />
-            </div>
-          )}
-        </li>
-      ))}
-    </ul>
-  </div>
+      <ul className="list-none p-0 m-0">
+        {assets.map((asset) => (
+          <li
+            key={asset.symbol}
+            className="mb-8 p-6 border border-gray-200 rounded-lg shadow-sm"
+          >
+            <Link href={`/chart/${asset.symbol}`}>
+              <div className="font-semibold mb-2">
+                {asset.symbol} — {asset.shortname}
+              </div>
+            </Link>
+
+            {intradayCharts[asset.symbol]?.length > 0 && (
+              <div className="mt-4 w-full max-w-[600px] h-[150px]">
+                <LinechartIntraday data={intradayCharts[asset.symbol]} />
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
