@@ -132,8 +132,15 @@ async def get_intraday_data(
     
     return chart_data
 
+active_trades = {}
+trade_counter = 0
+
 @stock_router.post("/trade")
 async def place_trade(trade: TradeAction):
+    global trade_counter
+    trade_counter += 1
+    trade_id = trade_counter
+
     direction = 1 if trade.action == "buy" else -1
 
     entry_price = trade.price
@@ -141,15 +148,24 @@ async def place_trade(trade: TradeAction):
     spread = round(trade.sell_price - trade.buy_price, 4)
     pnl = round((exit_price - entry_price) * direction, 4)
 
+    active_trades[trade_id] = {
+        "ticker": trade.ticker,
+        "action": trade.action,
+        "entry_price": entry_price,
+        "exit_price": exit_price,
+        "spread": spread,
+        "pnl": pnl,
+        "time": trade.time,
+    }
+
     return {
         "message": "Trade executed",
-        "data": {
-            "ticker": trade.ticker,
-            "action": trade.action,
-            "entry_price": entry_price,
-            "exit_price": exit_price,
-            "spread": spread,
-            "pnl": pnl,
-            "time": trade.time
-        }
+        "data": {**active_trades[trade_id], "trade_id": trade_id},
     }
+
+@stock_router.delete("/trade/{trade_id}")
+async def delete_trade(trade_id: int):
+    if trade_id not in active_trades:
+        raise HTTPException(status_code=404, detail="Trade not found")
+    del active_trades[trade_id]
+    return {"message": "Trade removed"}
