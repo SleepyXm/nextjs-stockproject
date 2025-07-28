@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 
 const API_BASE = "http://localhost:8000/api"
 const STOCK_DATA_URL = `${API_BASE}/stockdata?ticker_symbol=`;
-const LIVE_DATA_URL = `${API_BASE}/stockdata/latest?ticker_symbol=`;
+const LIVE_DATA_URL = API_BASE.replace(/^http/, 'ws') + '/ws/stockdata';
 
 export function useChartData<T extends { time: string } = any>(ticker: string, interval: string) {
   const [data, setData] = useState<T[] | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
 
-  // Initial fetch when ticker changes
+  // Initial fetch when ticker or interval changes
   useEffect(() => {
     if (!ticker || !interval) return;
 
@@ -20,17 +21,24 @@ export function useChartData<T extends { time: string } = any>(ticker: string, i
         console.error("Nothing to see here:", err);
       }
     };
+
     fetchData();
   }, [ticker, interval]);
 
-  // Live update effect
+  // Live update websocket effect
   useEffect(() => {
     if (!ticker || !interval) return;
 
-    const fetchLatest = async () => {
+    if (wsRef.current) {
+      wsRef.current.close();
+    }
+
+    const socket = new WebSocket(`${LIVE_DATA_URL}?ticker_symbol=${encodeURIComponent(ticker)}&interval=${encodeURIComponent(interval)}`);
+    wsRef.current = socket;
+
+    socket.onmessage = (event) => {
       try {
-        const res = await axios.get(`${LIVE_DATA_URL}${ticker}&interval=${interval}`);
-        const latestCandle: T = res.data;
+        const latestCandle: T = JSON.parse(event.data);
 
         setData((currentData) => {
           if (!currentData || currentData.length === 0) return [latestCandle];
@@ -38,26 +46,30 @@ export function useChartData<T extends { time: string } = any>(ticker: string, i
           const lastCandle = currentData[currentData.length - 1];
 
           if (lastCandle.time === latestCandle.time) {
-            // Replace last candle
             return [...currentData.slice(0, -1), latestCandle];
           } else if (lastCandle.time < latestCandle.time) {
-            // Append new candle
             return [...currentData, latestCandle];
           }
-          // If latestCandle.time <= lastCandle.time and not equal, ignore update
+
           return currentData;
         });
-      } catch (err) {
-        console.error("Live update fetch error:", err);
+      } catch (e) {
+        console.error("Websocket message parse error:", e);
       }
     };
 
-    // Fetch first immediately
-    fetchLatest();
+    socket.onerror = (error) => {
+      console.error("Websocket error:", error);
+    };
 
-    const intervalId = setInterval(fetchLatest, 1400);
+    socket.onclose = () => {
+      console.log("Websocket closed");
+    };
 
-    return () => clearInterval(intervalId);
+    return () => {
+      socket.close();
+      wsRef.current = null;
+    };
   }, [ticker, interval]);
 
   return data;
