@@ -171,7 +171,6 @@ export const ChartComponent: React.FC<{
 //  { time: '2018-12-26', open: 32.51, high: 32.57, low: 31.77, close: 32.92 },
 //  { time: '2018-12-27', open: 32.51, high: 32.57, low: 31.77, close: 32.92 },
 //  { time: '2018-12-28', open: 32.51, high: 32.57, low: 31.77, close: 32.92 }
-
 //];
 
 export function useChartData<T extends { time: string } = any>(ticker: string, interval: string) {
@@ -343,7 +342,5 @@ export default function App() {
         <p>Loading line chart data...</p>
       )}
   </div>
-
-
   )
 }
