@@ -1,12 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType, CandlestickSeries, AreaSeries } from 'lightweight-charts';
 import { LineChart, LineChartColors } from '../types/charts';
-
 
 export const CandleStickChart: React.FC<{
   data: any[];
   colors?: any;
-}> = ({ data, colors = {} }) => {
+  renderTradeUI?: React.ReactNode;
+}> = ({ data, colors = {}, renderTradeUI }) => {
   const {
     backgroundColor = 'transparent',
     textColor = 'white',
@@ -75,7 +75,17 @@ export const CandleStickChart: React.FC<{
     }
   }, [data]);
 
-  return <div ref={chartContainerRef2} style={{ width: "90vw", height: "70vh"  }} />;
+  return (
+    <div style={{ position: 'relative', width: "90vw", height: "70vh" }}>
+    <div ref={chartContainerRef2} style={{ width: '100%', height: '100%' }} />
+
+    {renderTradeUI && (
+      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 10 }}>
+        {renderTradeUI}
+      </div>
+    )}
+  </div>
+  );
 };
 
 
