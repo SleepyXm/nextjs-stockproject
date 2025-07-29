@@ -1,6 +1,41 @@
 import { useState } from "react";
 import { Trade } from "../types/charts";
 import axios from "axios";
+import { PriceLineOptions } from "lightweight-charts";
+
+export function PriceLines(
+  seriesRef: React.MutableRefObject<any | null>,
+  priceLinesRef: React.MutableRefObject<any[]>,
+  trades: Trade[]
+) {
+  if (!seriesRef.current) return;
+
+  // Remove existing lines
+  priceLinesRef.current.forEach(line => {
+    seriesRef.current.removePriceLine(line);
+  });
+  priceLinesRef.current = [];
+
+  // Add new lines
+  trades.forEach(trade => {
+    if (typeof trade.entry_price !== 'number') return;
+
+    const priceLineOptions: PriceLineOptions = {
+      price: trade.entry_price,
+      color: trade.action === 'buy' ? '#00FF8F' : '#FF3C3C',
+      lineWidth: 2,
+      lineStyle: 2,
+      axisLabelVisible: true,
+      axisLabelColor: 'black',
+      axisLabelTextColor: 'white',
+      lineVisible: true,
+      title: `${trade.action.toUpperCase()} @ ${trade.entry_price.toFixed(2)}`,
+    };
+
+    const priceLine = seriesRef.current.createPriceLine(priceLineOptions);
+    priceLinesRef.current.push(priceLine);
+  });
+}
 
 export default function TradeButtonRow({data, ticker, activeTrades, setActiveTrades,}:
   {data: any; ticker: string; activeTrades: Trade[]; setActiveTrades: React.Dispatch<React.SetStateAction<Trade[]>>;}) 

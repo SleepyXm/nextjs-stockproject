@@ -1,39 +1,18 @@
 "use client";
 
-import { Interval, RawData } from "../../types/charts";
+import { Interval } from "../../types/charts";
 import { CandleStickChart, Linechart } from "../ChartRender";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import axios from "axios";
 import { data } from "framer-motion/client";
 import { useChartData } from "../ChartData";
 import TradeButtonRow from "@/app/trading/trade";
 
 const API_BASE = "http://localhost:8000/api";
 
-function useCandlestickChartData(ticker: string, interval: string) {
-  return useChartData(ticker, interval);
-}
-
-function useLineChartData(ticker: string, interval: string) {
+function ShowChart(ticker: string, interval: string, type: "CandleStick" | "line") {
   const raw = useChartData(ticker, interval);
-  return raw?.map((item) => ({
-    time: item.time,
-    value: item.close,
-  }));
-}
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebounced(value);
-    }, delay);
-
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-  return debounced;
+  return type === "line" ? raw?.map((item) => ({ ...item, value:item.close })) : raw;
 }
 
 const intervals: Interval[] = ["1m", "5m", "15m", "1h", "1d", "1wk", "1mo"];
@@ -46,11 +25,10 @@ export default function ChartPage() {
 
   const [isCandle, setIsCandle] = useState(true); // true = candlestick, false = line
 
-  const debouncedTicker = useDebounce(symbolParam.toUpperCase(), 500);
-  const dataCandlestick = useCandlestickChartData(debouncedTicker, interval);
-  const dataLine = useLineChartData(debouncedTicker, interval);
-  const [activeTrades, setActiveTrades] = useState<any[]>([]);
 
+  const chartData = ShowChart(shortname, interval, isCandle ? "CandleStick" : "line");
+  const [activeTrades, setActiveTrades] = useState<any[]>([]);
+  const tradeUI = chartData && chartData.length > 0 ? (<TradeButtonRow data={chartData[chartData.length -1]} ticker={shortname} activeTrades={activeTrades} setActiveTrades={setActiveTrades} />) : null;
 
   return (
     <div className="p-4">
@@ -60,8 +38,9 @@ export default function ChartPage() {
             <button
               key={int}
               onClick={() => setInterval(int)}
-              className={`px-3 py-1 rounded ${interval === int ? "bg-blue-600 text-white" : "bg-gray-600"
-                }`}
+              className={`px-3 py-1 rounded ${
+                interval === int ? "bg-blue-600 text-white" : "bg-gray-600"
+              }`}
             >
               {int}
             </button>
@@ -71,42 +50,28 @@ export default function ChartPage() {
         <div className="flex gap-2">
           <button
             onClick={() => setIsCandle(true)}
-            className={`px-3 py-1 rounded ${isCandle ? "bg-blue-600 text-white" : "bg-gray-600"
-              }`}
+            className={`px-3 py-1 rounded ${
+              isCandle ? "bg-blue-600 text-white" : "bg-gray-600"}`}
           >
             Candlestick
           </button>
           <button
             onClick={() => setIsCandle(false)}
-            className={`px-3 py-1 rounded ${!isCandle ? "bg-blue-600 text-white" : "bg-gray-600"
-              }`}
+            className={`px-3 py-1 rounded ${!isCandle ? "bg-blue-600 text-white" : "bg-gray-600"}`}
           >
             Line
           </button>
         </div>
       </div>
       <h2 className="text-xl font-bold mb-2">{shortname} Chart</h2>
-      {isCandle ? (
-        dataCandlestick && dataCandlestick.length > 0 ? (
-          <CandleStickChart
-            data={dataCandlestick}
-            renderTradeUI={
-            <TradeButtonRow 
-              data={dataCandlestick[dataCandlestick.length - 1]} 
-              ticker={debouncedTicker}
-              activeTrades={activeTrades}
-              setActiveTrades={setActiveTrades}
-              />
-            }
-            trades={activeTrades}
-          />
+      {chartData && chartData.length > 0 ? (
+        isCandle ? (
+          <CandleStickChart data={chartData} renderTradeUI={tradeUI} trades={activeTrades} />
         ) : (
-          <p>Loading candlestick chart data...</p>
+          <Linechart data={chartData} renderTradeUI={tradeUI} trades={activeTrades} />
         )
-      ) : dataLine ? (
-        <Linechart data={dataLine} />
       ) : (
-        <p>Loading line chart data...</p>
+        <p>Loading {isCandle ? "candlestick" : "line"} chart data...</p>
       )}
     </div>
   );

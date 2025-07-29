@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { createChart, ColorType, CandlestickSeries, AreaSeries, PriceLineOptions } from 'lightweight-charts';
+import { createChart, ColorType, CandlestickSeries, AreaSeries, BaselineSeries, BaselineSeriesPartialOptions } from 'lightweight-charts';
+import { PriceLines } from '../trading/trade';
 
 export const CandleStickChart: React.FC<{
   data: any[];
@@ -72,32 +73,8 @@ export const CandleStickChart: React.FC<{
   }, []);
 
   useEffect(() => {
-      if (!seriesRef.current) return;
-
-      priceLinesRef.current.forEach(line => {
-        seriesRef.current.removePriceLine(line);
-      });
-      priceLinesRef.current = [];
-
-      trades.forEach(trade => {
-        if (typeof trade.entry_price !== 'number') return;
-
-        const priceLineOptions: PriceLineOptions = {
-          price: trade.entry_price,
-          color: trade.action === 'buy' ? '#00FF8F' : '#FF3C3C',
-          lineWidth: 2,
-          lineStyle: 2,
-          axisLabelVisible: true,
-          axisLabelColor: 'black',
-          axisLabelTextColor: 'white',
-          lineVisible: true,
-          title: `${trade.action.toUpperCase()} @ ${trade.entry_price.toFixed(2)}`,
-        };
-
-        const priceLine = seriesRef.current.createPriceLine(priceLineOptions);
-        priceLinesRef.current.push(priceLine);
-      });
-    }, [trades]);
+    PriceLines(seriesRef, priceLinesRef, trades);
+    }, [trades, seriesRef.current]);
 
   useEffect(() => {
     if (seriesRef.current) {
@@ -121,10 +98,7 @@ export const CandleStickChart: React.FC<{
 
 
 
-export const Linechart: React.FC<{
-  data: any[];
-  colors?: any;
-}> = ({ data, colors = {} }) => {
+export const Linechart: React.FC<{data: any[]; colors?: any; renderTradeUI?: React.ReactNode; trades?: any[];}> = ({ data, colors = {}, renderTradeUI, trades = [] }) => {
   const {
     backgroundColor = 'transparent',
     textColor = 'black',
@@ -136,6 +110,7 @@ export const Linechart: React.FC<{
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<any>(null);
   const seriesRef = useRef<any>(null);
+  const priceLinesRef = useRef<any[]>([]);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -182,12 +157,25 @@ export const Linechart: React.FC<{
   }, []);
 
   useEffect(() => {
+    PriceLines(seriesRef, priceLinesRef, trades);
+    }, [trades, seriesRef.current]);
+
+  useEffect(() => {
     if (seriesRef.current) {
       seriesRef.current.setData(data);
     }
   }, [data]);
 
-  return <div ref={chartContainerRef} style={{ width: "90vw", height: "70vh" }} />;
+  return(
+  <div style={{ position: 'relative', width: "90vw", height: "70vh" }}>
+    <div ref={chartContainerRef} style={{ width: '100%', height: '100%' }} />
+    {renderTradeUI && (
+      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 10 }}>
+        {renderTradeUI}
+      </div>
+      )}
+  </div>
+  );
 };
 
 
@@ -199,9 +187,11 @@ export const LinechartIntraday: React.FC<{
   const {
     backgroundColor = 'transparent',
     textColor = 'black',
-    lineColor = '#4deb82ff',
-    areaTopColor = '#29ff70ff',
-    areaBottomColor = 'rgba(15, 92, 49, 0.28)',
+    topLineColor = '#4deb82ff',
+    bottomLineColor = '#ff4d4d',
+    topFillColor1 = '#29ff70ff',
+    bottomFillColor1 = 'rgba(255, 0, 0, 0.2)',
+    baselineValue = 0,
   } = colors;
 
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
@@ -223,11 +213,14 @@ export const LinechartIntraday: React.FC<{
       },
     });
 
-    const series = chart.addSeries(AreaSeries, {
-      lineColor,
-      topColor: areaTopColor,
-      bottomColor: areaBottomColor,
-    });
+    const series = chart.addSeries(BaselineSeries, {
+      baseValue: { type: 'price', price: baselineValue },
+      topLineColor,
+      bottomLineColor,
+      topFillColor1,
+      bottomFillColor1,
+      lineWidth: 2,
+    } satisfies BaselineSeriesPartialOptions);
 
     series.setData(data);
 

@@ -9,7 +9,6 @@ export function useChartData<T extends { time: string } = any>(ticker: string, i
   const [data, setData] = useState<T[] | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
-  // Initial fetch when ticker or interval changes
   useEffect(() => {
     if (!ticker || !interval) return;
 
@@ -25,7 +24,6 @@ export function useChartData<T extends { time: string } = any>(ticker: string, i
     fetchData();
   }, [ticker, interval]);
 
-  // Live update websocket effect
   useEffect(() => {
     if (!ticker || !interval) return;
 
