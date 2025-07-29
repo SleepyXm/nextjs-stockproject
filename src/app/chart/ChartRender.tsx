@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType, CandlestickSeries, AreaSeries } from 'lightweight-charts';
-import { LineChart, LineChartColors } from '../types/charts';
+import { useEffect, useRef } from 'react';
+import { createChart, ColorType, CandlestickSeries, AreaSeries, PriceLineOptions } from 'lightweight-charts';
 
 export const CandleStickChart: React.FC<{
   data: any[];
   colors?: any;
   renderTradeUI?: React.ReactNode;
-}> = ({ data, colors = {}, renderTradeUI }) => {
+  trades?: any[];
+}> = ({ data, colors = {}, renderTradeUI, trades = [] }) => {
   const {
     backgroundColor = 'transparent',
     textColor = 'white',
@@ -21,6 +21,7 @@ export const CandleStickChart: React.FC<{
   const chartContainerRef2 = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<any>(null);
   const seriesRef = useRef<any>(null);
+  const priceLinesRef = useRef<any[]>([]);
 
   useEffect(() => {
     if (!chartContainerRef2.current) return;
@@ -46,10 +47,10 @@ export const CandleStickChart: React.FC<{
       wickDownColor,
     });
 
-    series.setData(data);
-
     chartRef.current = chart;
     seriesRef.current = series;
+
+    series.setData(data);
 
     const handleResize = () => {
       if (chartRef.current && chartContainerRef2.current) {
@@ -66,8 +67,37 @@ export const CandleStickChart: React.FC<{
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
+      priceLinesRef.current = [];
     };
   }, []);
+
+  useEffect(() => {
+      if (!seriesRef.current) return;
+
+      priceLinesRef.current.forEach(line => {
+        seriesRef.current.removePriceLine(line);
+      });
+      priceLinesRef.current = [];
+
+      trades.forEach(trade => {
+        if (typeof trade.entry_price !== 'number') return;
+
+        const priceLineOptions: PriceLineOptions = {
+          price: trade.entry_price,
+          color: trade.action === 'buy' ? '#00FF8F' : '#FF3C3C',
+          lineWidth: 2,
+          lineStyle: 2,
+          axisLabelVisible: true,
+          axisLabelColor: 'black',
+          axisLabelTextColor: 'white',
+          lineVisible: true,
+          title: `${trade.action.toUpperCase()} @ ${trade.entry_price.toFixed(2)}`,
+        };
+
+        const priceLine = seriesRef.current.createPriceLine(priceLineOptions);
+        priceLinesRef.current.push(priceLine);
+      });
+    }, [trades]);
 
   useEffect(() => {
     if (seriesRef.current) {
@@ -92,8 +122,8 @@ export const CandleStickChart: React.FC<{
 
 
 export const Linechart: React.FC<{
-  data: LineChart[];
-  colors?: LineChartColors;
+  data: any[];
+  colors?: any;
 }> = ({ data, colors = {} }) => {
   const {
     backgroundColor = 'transparent',
@@ -163,8 +193,8 @@ export const Linechart: React.FC<{
 
 
 export const LinechartIntraday: React.FC<{
-  data: LineChart[];
-  colors?: LineChartColors;
+  data: any[];
+  colors?: any;
 }> = ({ data, colors = {} }) => {
   const {
     backgroundColor = 'transparent',

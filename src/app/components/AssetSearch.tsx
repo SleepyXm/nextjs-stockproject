@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Asset } from "../types/Assets";
-import { LineChart } from "../types/charts";
+import { RawData } from "../types/charts";
 import { LinechartIntraday } from "../chart/ChartRender";
 import Link from "next/link";
 
@@ -23,7 +23,7 @@ async function fetchIntraday(
   symbol: string,
   interval = "15m",
   period = "1d"
-): Promise<LineChart[]> {
+): Promise<RawData[]> {
   try {
     const res = await fetch(
       `http://localhost:8000/api/stockdata/intraday?ticker_symbol=${encodeURIComponent(
@@ -46,7 +46,7 @@ export default function AssetSearchComponent() {
   const [searchInput, setSearchInput] = useState("");
   const [assets, setAssets] = useState<Asset[]>([]);
   const [intradayCharts, setIntradayCharts] = useState<
-    Record<string, LineChart[]>
+    Record<string, RawData[]>
   >({});
 
   const handleSearch = async () => {
@@ -61,7 +61,7 @@ export default function AssetSearchComponent() {
     });
 
     const chartResults = await Promise.all(chartPromises);
-    const chartMap: Record<string, LineChart[]> = {};
+    const chartMap: Record<string, RawData[]> = {};
 
     for (const { symbol, chart } of chartResults) {
       chartMap[symbol] = chart;

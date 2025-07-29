@@ -12,7 +12,7 @@ PERIODS = {
 
 def load_stock_data(ticker_symbol, interval, period):
     try:
-        data = yf.download(ticker_symbol, period=period, interval=interval)
+        data = yf.download(ticker_symbol, period=period, interval=interval, auto_adjust=True, progress=False)
     except Exception as e:
         raise ValueError(f"Error: {e}")
     
@@ -20,7 +20,7 @@ def load_stock_data(ticker_symbol, interval, period):
         raise ValueError("No data found.")
 
     column_mapping = identify_columns(data, ticker_symbol)
-    data = data.fillna(method='ffill')
+    data = data.ffill()
     data = calculate_metrics(data, column_mapping)
     return data, column_mapping
 

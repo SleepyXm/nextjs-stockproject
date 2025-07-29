@@ -1,6 +1,6 @@
 "use client";
 
-import { CandlestickChart, Interval } from "../../types/charts";
+import { Interval, RawData } from "../../types/charts";
 import { CandleStickChart, Linechart } from "../ChartRender";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -12,7 +12,7 @@ import TradeButtonRow from "@/app/trading/trade";
 const API_BASE = "http://localhost:8000/api";
 
 function useCandlestickChartData(ticker: string, interval: string) {
-  return useChartData<CandlestickChart>(ticker, interval);
+  return useChartData(ticker, interval);
 }
 
 function useLineChartData(ticker: string, interval: string) {
@@ -49,6 +49,7 @@ export default function ChartPage() {
   const debouncedTicker = useDebounce(symbolParam.toUpperCase(), 500);
   const dataCandlestick = useCandlestickChartData(debouncedTicker, interval);
   const dataLine = useLineChartData(debouncedTicker, interval);
+  const [activeTrades, setActiveTrades] = useState<any[]>([]);
 
 
   return (
@@ -89,7 +90,15 @@ export default function ChartPage() {
         dataCandlestick && dataCandlestick.length > 0 ? (
           <CandleStickChart
             data={dataCandlestick}
-            renderTradeUI={<TradeButtonRow data={dataCandlestick[dataCandlestick.length - 1]} ticker={debouncedTicker} />}
+            renderTradeUI={
+            <TradeButtonRow 
+              data={dataCandlestick[dataCandlestick.length - 1]} 
+              ticker={debouncedTicker}
+              activeTrades={activeTrades}
+              setActiveTrades={setActiveTrades}
+              />
+            }
+            trades={activeTrades}
           />
         ) : (
           <p>Loading candlestick chart data...</p>
