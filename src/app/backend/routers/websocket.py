@@ -1,5 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
-from routers.utils.stock_utils import load_stock_data
+from .utils.stock_utils import load_stock_data
 import asyncio
 from datetime import datetime
 

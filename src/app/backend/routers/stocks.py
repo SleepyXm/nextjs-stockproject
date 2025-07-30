@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
-from routers.utils.stock_utils import load_stock_data, INTERVALS, PERIODS
+from .utils.stock_utils import load_stock_data, INTERVALS, PERIODS
 
 stock_router = APIRouter()
 
